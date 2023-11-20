@@ -10,6 +10,12 @@ The mapping is conservative by default. The following prefixes are ignored:
 - Prefixes with origin AS sets encoded in the RIB
 - Prefixes for which peers of a collector disagree on the origin
 - Prefixes for which collectors disagree on the origin
+- Prefixes that are
+  [not globally reachable](https://docs.python.org/3/library/ipaddress.html?highlight=ipaddress#ipaddress.IPv4Address.is_global)
+  according to Python's ipaddress module, which is based on the IANA Special-Purpose Address
+  Registries
+  ([IPv4](https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml);
+   [IPv6](https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml)).
 
 In addition, during the merging process a minimum number or ratio of collectors can be
 specified that is required to see a prefix in order for the prefix to be included in the

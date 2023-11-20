@@ -1,5 +1,6 @@
 import argparse
 import bz2
+import ipaddress
 import json
 import logging
 import os
@@ -45,8 +46,14 @@ def transform_rib(fixture: Tuple[str, str]) -> dict:
         if peer_ip not in stats['peers']:
             stats['peers'].add(peer_ip)
 
-        if prefix == '0.0.0.0/0' or prefix == '::/0':
-            logging.debug(line)
+        try:
+            prefix_parsed = ipaddress.ip_network(prefix)
+        except ValueError as e:
+            logging.error(f'Invalid prefix ({prefix}): {e}')
+            continue
+
+        if not prefix_parsed.is_global:
+            logging.debug(f'Ignoring non-global prefix: {prefix}')
             continue
 
         stats['entries'] += 1

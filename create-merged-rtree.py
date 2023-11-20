@@ -142,11 +142,11 @@ def main() -> None:
 
     # autopep8: off
     logging.info(f'Used {used_prefixes} prefixes seen by {avg_collector_count:.2f} collectors on average')
-    logging.info(f'          Total: {total_prefixes:7d} 100.00%')
-    logging.info(f'        Ignored: {total_ignored_prefixes:7d} {total_ignored_prefixes_pct:6.2f}% 100.00%')
-    logging.info(f'      Contested: {contested_prefixes:7d} {contested_prefixes_total_pct:6.2f}% {contested_prefixes_pct:6.2f}%')
-    logging.info(f'Below threshold: {below_threshold_prefixes:7d} {below_threshold_prefixes_total_pct:6.2f}% {below_threshold_prefixes_pct:6.2f}%')
-    logging.info(f'           Used: {used_prefixes:7d} {used_prefixes_pct:6.2f}%')
+    logging.info(f'                     Total: {total_prefixes:7,d} 100.00%')
+    logging.info(f'                   Ignored: {total_ignored_prefixes:7,d} {total_ignored_prefixes_pct:6.2f}% 100.00%')
+    logging.info(f'Announced by multiple ASes: {contested_prefixes:7,d} {contested_prefixes_total_pct:6.2f}% {contested_prefixes_pct:6.2f}%')
+    logging.info(f'           Below threshold: {below_threshold_prefixes:7,d} {below_threshold_prefixes_total_pct:6.2f}% {below_threshold_prefixes_pct:6.2f}%')
+    logging.info(f'                      Used: {used_prefixes:7,d} {used_prefixes_pct:6.2f}%')
     # autopep8: on
 
     with bz2.open(output_file, 'wb') as f:

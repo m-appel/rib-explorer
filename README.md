@@ -8,8 +8,7 @@ corresponding timestamp.
 The mapping is conservative by default. The following prefixes are ignored:
 
 - Prefixes with origin AS sets encoded in the RIB
-- Prefixes for which peers of a collector disagree on the origin
-- Prefixes for which collectors disagree on the origin
+- Prefixes for which peers disagree on the origin (multi-origin prefixes)
 - Prefixes that are
   [not globally reachable](https://docs.python.org/3/library/ipaddress.html?highlight=ipaddress#ipaddress.IPv4Address.is_global)
   according to Python's ipaddress module, which is based on the IANA Special-Purpose Address

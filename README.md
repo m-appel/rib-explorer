@@ -29,6 +29,8 @@ Install the required dependencies.
 pip install -r requirements.txt
 ```
 
+[bgpdump](https://github.com/RIPE-NCC/bgpdump) is required to read the RIB files.
+
 ## Usage
 
 Build an index of all currently available RIS and Route Views collectors.

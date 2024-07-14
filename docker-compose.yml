@@ -1,0 +1,20 @@
+services:
+  ribexplorer-volume:
+    build: .
+    profiles:
+      - volume
+    volumes:
+      - ribexplorer-data:/code/data
+      - ribexplorer-indexes:/code/indexes
+      - ribexplorer-transformed:/code/transformed
+      - ./merged:/code/merged
+
+  ribexplorer-mount:
+    build: .
+    profiles:
+      - mount
+    volumes:
+      - ./data:/code/data
+      - ./indexes:/code/indexes
+      - ./transformed:/code/transformed
+      - ./merged:/code/merged

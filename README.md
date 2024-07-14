@@ -22,27 +22,49 @@ final radix tree.
 
 ## Setup
 
+You can either install the dependencies or use Docker.
+
 Install the required dependencies.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-[bgpdump](https://github.com/RIPE-NCC/bgpdump) is required to read the RIB files.
+[bgpkit-parser](https://github.com/bgpkit/bgpkit-parser) is required to read the RIB
+files.
+
+## Docker
+
+The Docker services come in two flavors:
+
+1. `ribexplorer-mount`: Mount the folders in this directory in the container. Enables
+   direct file access.
+1. `ribexplorer-volume`: Folders are mounted from Docker volumes instead.
+
+In both cases the `merged` folder from this directory is mounted in the container.
 
 ## Usage
+
+All scripts can be either called directly or via `docker compose`. The Docker syntax
+starts with a command (see below) and all following parameters are passed to the Python script.
 
 Build an index of all currently available RIS and Route Views collectors.
 
 ```bash
+# Direct
 python3 ./build-index.py
+# Docker
+docker compose run --rm ribexplorer-mount index
 ```
 
 Use the index file to download RIBs for all available collectors for the specified
 timestamp.
 
 ```bash
-python3 ./fetch-snapshots.py ./indexes/YYYYmmdd.index.json YYYY-mm-ddTHH:MM
+# Direct
+python3 ./fetch-snapshots.py YYYY-mm-ddTHH:MM
+# Docker
+docker compose run --rm ribexplorer-mount fetch YYYY-mm-ddTHH:MM
 ```
 
 Notes:
@@ -56,7 +78,10 @@ Notes:
 Transform the downloaded RIBs to radix trees.
 
 ```bash
-python3 ./transform-snapshots.py ./indexes/YYYYmmdd.index.json YYYY-mm-ddTHH:MM
+# Direct
+python3 ./transform-snapshots.py YYYY-mm-ddTHH:MM
+# Docker
+docker compose run --rm ribexplorer-mount transform YYYY-mm-ddTHH:MM
 ```
 
 Notes:
@@ -73,11 +98,16 @@ Notes:
 Merge the radix trees into a single file.
 
 ```bash
-python3 ./create-merged-rtree.py ./indexes/YYYYmmdd.index.json YYYY-mm-ddTHH:MM output.pickle.bz2
+# Direct
+python3 ./create-merged-rtree.py YYYY-mm-ddTHH:MM output.pickle.bz2
+# Docker
+docker compose run --rm ribexplorer-mount create YYYY-mm-ddTHH:MM output.pickle.bz2
 ```
 
 Notes:
 
+- The output file is created in the `/merged` folder by default. Use the `--output-dir`
+  parameter to change this location (does not work with Docker).
 - If collectors disagree about the origin for a prefix, that prefix is ignored.
 - A minimum number or ratio of collectors can be specified using the
   `--min-collector-ratio` or `--min-collector-count` parameters. If a prefix is seen by

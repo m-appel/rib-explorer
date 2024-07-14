@@ -131,7 +131,7 @@ def handle_ris() -> dict:
 def main() -> None:
     desc = """Fetch a list of all Route Views and RIPE RIS collectors."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('-d', '--output-dir',
+    parser.add_argument('-o', '--output-dir',
                         default='indexes/',
                         help='use this output directory instead of "indexes/"')
     args = parser.parse_args()

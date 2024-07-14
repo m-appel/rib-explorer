@@ -2,6 +2,7 @@ import argparse
 import bz2
 import json
 import logging
+import os
 import pickle
 import sys
 from collections import defaultdict
@@ -9,8 +10,9 @@ from datetime import timedelta
 
 import radix
 
-from helpers.defines import RTREE_FILE_FORMATS, TIMESTAMP_FORMAT_ESCAPED
-from helpers.shared_functions import get_candidate_file, parse_timestamp_argument, sanitize_dir
+from helpers.defines import (DEFAULT_MERGED_FOLDER, DEFAULT_TRANSFORMED_FOLDER, RTREE_FILE_FORMATS,
+                             TIMESTAMP_FORMAT_ESCAPED)
+from helpers.shared_functions import get_candidate_file, get_latest_index_file, parse_timestamp_argument
 
 EXPECTED_OUTPUT_FILE_SUFFIX = '.pickle.bz2'
 
@@ -22,16 +24,19 @@ def main() -> None:
     In addition, a minimum number or ratio of collectors can be specified. If a prefix
     is seen by fewer collectors, it is ignored as well."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('index')
     parser.add_argument('timestamp', help=f'UTC timestamp in {TIMESTAMP_FORMAT_ESCAPED} format')
-    parser.add_argument('output_file')
+    parser.add_argument('output_file', help=f'output file is created in the {DEFAULT_MERGED_FOLDER} folder')
     parser.add_argument('--max-timestamp-difference',
                         type=int,
                         default=24,
                         help='max allowed difference (in h) from timestamp')
-    parser.add_argument('-i', '--input-dir',
-                        default='transformed/',
-                        help='change default input directory')
+    parser.add_argument('-d', '--data-dir',
+                        default=DEFAULT_TRANSFORMED_FOLDER,
+                        help=f'input data directory (default: {DEFAULT_TRANSFORMED_FOLDER})')
+    parser.add_argument('-i', '--index', help='index file')
+    parser.add_argument('-o', '--output-dir',
+                        default=DEFAULT_MERGED_FOLDER,
+                        help=f'output directory (default: {DEFAULT_MERGED_FOLDER})')
     min_group = parser.add_mutually_exclusive_group()
     min_group.add_argument('--min-collector-ratio',
                            type=float,
@@ -60,23 +65,28 @@ def main() -> None:
         sys.exit(1)
 
     index_file = args.index
+    if index_file is None:
+        index_file = get_latest_index_file(timestamp)
+        if not index_file:
+            sys.exit(1)
     with open(index_file, 'r') as f:
         index = json.load(f)
 
-    output_file = args.output_file
+    output_dir = args.output_dir
+    output_file = os.path.join(output_dir, args.output_file)
     if not output_file.endswith(EXPECTED_OUTPUT_FILE_SUFFIX):
         logging.warning(f'Output file will be in {EXPECTED_OUTPUT_FILE_SUFFIX} format, but different file suffix was '
                         f'specified.')
 
     logging.info('Reading input files...')
-    input_dir = sanitize_dir(args.input_dir)
+    input_dir = args.data_dir
     max_timestamp_difference = timedelta(hours=args.max_timestamp_difference)
     # prefix -> as -> set of collectors
     prefix_maps = defaultdict(lambda: defaultdict(set))
     total_collector_count = 0
     for source, collectors in index['sources'].items():
         for collector in collectors:
-            collector_dir = f'{input_dir}{source}/{collector}/'
+            collector_dir = os.path.join(input_dir, source, collector)
             candidate_file = get_candidate_file(collector_dir,
                                                 timestamp,
                                                 max_timestamp_difference,
@@ -142,11 +152,11 @@ def main() -> None:
 
     # autopep8: off
     logging.info(f'Used {used_prefixes} prefixes seen by {avg_collector_count:.2f} collectors on average')
-    logging.info(f'                     Total: {total_prefixes:7,d} 100.00%')
-    logging.info(f'                   Ignored: {total_ignored_prefixes:7,d} {total_ignored_prefixes_pct:6.2f}% 100.00%')
-    logging.info(f'Announced by multiple ASes: {contested_prefixes:7,d} {contested_prefixes_total_pct:6.2f}% {contested_prefixes_pct:6.2f}%')
-    logging.info(f'           Below threshold: {below_threshold_prefixes:7,d} {below_threshold_prefixes_total_pct:6.2f}% {below_threshold_prefixes_pct:6.2f}%')
-    logging.info(f'                      Used: {used_prefixes:7,d} {used_prefixes_pct:6.2f}%')
+    logging.info(f'                     Total: {total_prefixes:9,d} 100.00%')
+    logging.info(f'                   Ignored: {total_ignored_prefixes:9,d} {total_ignored_prefixes_pct:6.2f}% 100.00%')
+    logging.info(f'Announced by multiple ASes: {contested_prefixes:9,d} {contested_prefixes_total_pct:6.2f}% {contested_prefixes_pct:6.2f}%')
+    logging.info(f'           Below threshold: {below_threshold_prefixes:9,d} {below_threshold_prefixes_total_pct:6.2f}% {below_threshold_prefixes_pct:6.2f}%')
+    logging.info(f'                      Used: {used_prefixes:9,d} {used_prefixes_pct:6.2f}%')
     # autopep8: on
 
     with bz2.open(output_file, 'wb') as f:

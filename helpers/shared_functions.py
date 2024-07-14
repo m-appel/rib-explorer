@@ -2,13 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from helpers.defines import FOLDER_FORMAT, TIMESTAMP_FORMAT
-
-
-def sanitize_dir(dir: str) -> str:
-    if not dir.endswith('/'):
-        dir += '/'
-    return dir
+from helpers.defines import DEFAULT_INDEX_FOLDER, FOLDER_FORMAT, INDEX_OUTPUT_FILE_FORMAT, TIMESTAMP_FORMAT
 
 
 def parse_timestamp_argument(arg: str) -> datetime:
@@ -30,7 +24,7 @@ def get_candidate_file(
     timestamp. max_timestamp_difference can be used to limit the acceptable deviation
     from the specified timestamp. Returns None if no valid file is found.
     """
-    month_folder = f'{collector_dir}{timestamp.strftime(FOLDER_FORMAT)}/'
+    month_folder = os.path.join(collector_dir, timestamp.strftime(FOLDER_FORMAT))
     if not os.path.exists(month_folder):
         logging.warning(f'Folder does not exist: {month_folder}')
         return None
@@ -40,7 +34,7 @@ def get_candidate_file(
         if not entry.is_file():
             continue
         file_ts = None
-        file_path = f'{month_folder}{entry.name}'
+        file_path = os.path.join(month_folder, entry.name)
         for format in file_formats:
             try:
                 file_ts = datetime.strptime(entry.name, format).replace(tzinfo=timezone.utc)
@@ -58,3 +52,22 @@ def get_candidate_file(
     if best_file is None:
         logging.warning(f'No valid file found in folder: {month_folder}')
     return best_file
+
+
+def get_latest_index_file(timestamp: datetime) -> str:
+    latest = None
+    file_name = str()
+    for entry in os.scandir(DEFAULT_INDEX_FOLDER):
+        try:
+            entry_dt = datetime.strptime(entry.name, INDEX_OUTPUT_FILE_FORMAT).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if not latest or entry_dt > latest:
+            latest = entry_dt
+            file_name = entry.name
+    if latest is None:
+        logging.error('Failed to find valid index file.')
+        return str()
+    if timestamp > latest:
+        logging.warning(f'Latest index file is older than the requested timestamp. Index: {latest}')
+    return os.path.join(DEFAULT_INDEX_FOLDER, file_name)

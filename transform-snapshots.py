@@ -15,8 +15,9 @@ from typing import Tuple
 
 import radix
 
-from helpers.defines import FOLDER_FORMAT, RIB_FILE_FORMATS, TIMESTAMP_FORMAT_ESCAPED
-from helpers.shared_functions import get_candidate_file, parse_timestamp_argument, sanitize_dir
+from helpers.defines import (DEFAULT_DATA_FOLDER, DEFAULT_TRANSFORMED_FOLDER, FOLDER_FORMAT, RIB_FILE_FORMATS,
+                             TIMESTAMP_FORMAT_ESCAPED)
+from helpers.shared_functions import get_candidate_file, get_latest_index_file, parse_timestamp_argument
 
 OUTPUT_FILE_SUFFIX = '.pickle.bz2'
 
@@ -139,24 +140,24 @@ def main() -> None:
 
     Transform the files closest to the specified timestamp. If no file matching the
     exact timestamp is found, transform the next-closest file up to a difference of 24
-    hours, which can be adjust with the --max-timestamp-difference parameter.
+    hours, which can be adjusted with the --max-timestamp-difference parameter.
 
     Ignore prefixes with origin AS sets from the RIB, but also origin AS sets that would be created
     due to peers disagreeing on the origin AS for a prefix.
     """
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('index')
     parser.add_argument('timestamp', help=f'UTC timestamp in {TIMESTAMP_FORMAT_ESCAPED} format')
     parser.add_argument('--max-timestamp-difference',
                         type=int,
                         default=24,
                         help='max allowed difference (in h) from timestamp')
-    parser.add_argument('-i', '--input-dir',
-                        default='data/',
-                        help='change default input directory')
+    parser.add_argument('-d', '--data-dir',
+                        default=DEFAULT_DATA_FOLDER,
+                        help=f'input data directory (default: {DEFAULT_DATA_FOLDER})')
+    parser.add_argument('-i', '--index', help='index file')
     parser.add_argument('-o', '--output-dir',
-                        default='transformed/',
-                        help='change default output directory')
+                        default=DEFAULT_TRANSFORMED_FOLDER,
+                        help=f'output directory (default: {DEFAULT_TRANSFORMED_FOLDER})')
     parser.add_argument('-n', '--num-workers',
                         type=int,
                         default=4,
@@ -189,25 +190,31 @@ def main() -> None:
         sys.exit(1)
 
     index_file = args.index
+    if index_file is None:
+        index_file = get_latest_index_file(timestamp)
+        if not index_file:
+            sys.exit(1)
     with open(index_file, 'r') as f:
         index = json.load(f)
 
-    input_dir = sanitize_dir(args.input_dir)
-    output_dir = sanitize_dir(args.output_dir)
+    input_dir = args.data_dir
+    output_dir = args.output_dir
     max_timestamp_difference = timedelta(hours=args.max_timestamp_difference)
 
     fixtures = list()
     skipped_files = 0
     for source, collectors in index['sources'].items():
         for collector in collectors:
-            collector_dir = f'{input_dir}{source}/{collector}/'
+            collector_dir = os.path.join(input_dir, source, collector)
             candidate_file = get_candidate_file(collector_dir,
                                                 timestamp,
                                                 max_timestamp_difference,
                                                 RIB_FILE_FORMATS)
             if candidate_file is None:
                 continue
-            output_file = f'{output_dir}{source}/{collector}/{timestamp.strftime(FOLDER_FORMAT)}/{os.path.splitext(candidate_file[0])[0]}{OUTPUT_FILE_SUFFIX}'
+            output_file_name = f'{os.path.splitext(candidate_file[0])[0]}{OUTPUT_FILE_SUFFIX}'
+            output_file = os.path.join(output_dir, source, collector,
+                                       timestamp.strftime(FOLDER_FORMAT), output_file_name)
             if not args.force and os.path.exists(output_file):
                 skipped_files += 1
                 continue

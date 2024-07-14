@@ -1,14 +1,15 @@
 import logging
+import os
 from datetime import datetime, timezone
 
 from fetchers import BaseFetcher
-from helpers.defines import ROUTE_VIEWS_RIB_FORMATS
+from helpers.defines import DEFAULT_DATA_FOLDER, ROUTE_VIEWS_RIB_FORMATS
 
 
 class RouteViewsFetcher(BaseFetcher):
-    def __init__(self, collector: str, url: str, timestamp: datetime, output_dir: str = 'data/') -> None:
+    def __init__(self, collector: str, url: str, timestamp: datetime, output_dir: str = DEFAULT_DATA_FOLDER) -> None:
         super().__init__(collector, url, timestamp, output_dir)
-        self.output_dir = f'{output_dir}routeviews/{collector}/{timestamp.strftime(self.folder_format)}/'
+        self.output_dir = os.path.join(output_dir, 'routeviews', collector, timestamp.strftime(self.folder_format))
 
     def get_file_list(self) -> bool:
         base_index = super().fetch_url(self.url)

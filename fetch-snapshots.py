@@ -7,8 +7,8 @@ from multiprocessing import Pool
 from fetchers import BaseFetcher
 from fetchers.RISFetcher import RISFetcher
 from fetchers.RouteViewsFetcher import RouteViewsFetcher
-from helpers.defines import TIMESTAMP_FORMAT_ESCAPED
-from helpers.shared_functions import parse_timestamp_argument, sanitize_dir
+from helpers.defines import DEFAULT_DATA_FOLDER, TIMESTAMP_FORMAT_ESCAPED
+from helpers.shared_functions import get_latest_index_file, parse_timestamp_argument
 
 
 def fetch(collector: BaseFetcher) -> None:
@@ -17,17 +17,18 @@ def fetch(collector: BaseFetcher) -> None:
 
 def main() -> None:
     desc = """Takes an index file (created with build-index.py) and a timestamp fo fetch RIBs for
-    the specified timestamp in parallel."""
+    the specified timestamp in parallel. By default the newest index file in the
+    /indexes folder is used."""
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('index')
     parser.add_argument('timestamp', help=f'UTC timestamp in {TIMESTAMP_FORMAT_ESCAPED} format')
-    parser.add_argument('-o', '--output-dir',
-                        default='data/',
-                        help='change default output directory')
+    parser.add_argument('-i', '--index', help='index file')
     parser.add_argument('-n', '--num-workers',
                         type=int,
                         default=4,
                         help='number of parallel workers')
+    parser.add_argument('-o', '--output-dir',
+                        default=DEFAULT_DATA_FOLDER,
+                        help=f'output directory (default: {DEFAULT_DATA_FOLDER})')
     args = parser.parse_args()
 
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -45,14 +46,18 @@ def main() -> None:
 
     timestamp = parse_timestamp_argument(args.timestamp)
     if timestamp is None:
-        logging.error(f'Invalid timestamp specified')
+        logging.error('Invalid timestamp specified')
         sys.exit(1)
 
     index_file = args.index
+    if index_file is None:
+        index_file = get_latest_index_file(timestamp)
+        if not index_file:
+            sys.exit(1)
     with open(index_file, 'r') as f:
         index = json.load(f)
 
-    output_dir = sanitize_dir(args.output_dir)
+    output_dir = args.output_dir
     collectors = list()
     # Build Route Views fetchers
     for collector, url in index['sources']['routeviews'].items():

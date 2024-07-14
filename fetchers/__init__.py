@@ -7,11 +7,11 @@ from typing import Tuple
 import requests
 from bs4 import BeautifulSoup
 
-from helpers.defines import FOLDER_FORMAT
+from helpers.defines import DEFAULT_DATA_FOLDER, FOLDER_FORMAT
 
 
 class BaseFetcher(ABC):
-    def __init__(self, collector: str, url: str, timestamp: datetime, output_dir: str = 'data/') -> None:
+    def __init__(self, collector: str, url: str, timestamp: datetime, output_dir: str = DEFAULT_DATA_FOLDER) -> None:
         self.folder_format = FOLDER_FORMAT
         # If no file for the specified time is found, fetch the
         # next best, but only if the time difference is below this
@@ -21,7 +21,7 @@ class BaseFetcher(ABC):
         self.collector = collector
         self.url = f'{url}{timestamp.strftime(self.folder_format)}/'
         self.timestamp = timestamp
-        self.output_dir = str()
+        self.output_dir = output_dir
         self.file_list = list()
         logging.debug(f'{collector} {timestamp}')
 
@@ -48,7 +48,7 @@ class BaseFetcher(ABC):
         candidate_file = self.get_closest_file()
         if candidate_file is None:
             return
-        output_file = f'{self.output_dir}{candidate_file[1]}'
+        output_file = os.path.join(self.output_dir, candidate_file[1])
         if os.path.exists(output_file):
             logging.info(f'{self.collector}: File already cached {output_file}')
             return

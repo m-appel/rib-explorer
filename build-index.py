@@ -8,11 +8,12 @@ from datetime import datetime, timezone
 import requests
 from bs4 import BeautifulSoup
 
+from helpers.defines import DEFAULT_INDEX_FOLDER, INDEX_OUTPUT_FILE_FORMAT
+
 ROUTE_VIEWS_INDEX_URL = 'http://routeviews.org'
 RIS_API_ENDPOINT = 'https://stat.ripe.net/data/rrc-info/data.json'
 RIS_COLLECTOR_FORMAT = 'rrc{id:02d}'
 RIS_COLLECTOR_URL_FORMAT = 'https://data.ris.ripe.net/{collector}/'
-OUTPUT_FILE_FORMAT = '%Y%m%d.index.json'
 
 
 def get_route_views_collector_name(url: str) -> str:
@@ -132,8 +133,8 @@ def main() -> None:
     desc = """Fetch a list of all Route Views and RIPE RIS collectors."""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-o', '--output-dir',
-                        default='indexes/',
-                        help='use this output directory instead of "indexes/"')
+                        default=DEFAULT_INDEX_FOLDER,
+                        help=f'output directory (default: {DEFAULT_INDEX_FOLDER})')
     args = parser.parse_args()
 
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -161,11 +162,9 @@ def main() -> None:
     output_data['sources'] = sources
 
     output_dir = args.output_dir
-    if not output_dir.endswith('/'):
-        output_dir += '/'
     os.makedirs(output_dir, exist_ok=True)
 
-    output_file = f'{output_dir}{datetime.now(tz=timezone.utc).strftime(OUTPUT_FILE_FORMAT)}'
+    output_file = os.path.join(output_dir, datetime.now(tz=timezone.utc).strftime(INDEX_OUTPUT_FILE_FORMAT))
     logging.info(f'Writing data to: {output_file}')
 
     with open(output_file, 'w') as f:

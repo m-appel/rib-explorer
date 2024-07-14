@@ -9,6 +9,7 @@ import subprocess as sp
 import sys
 from datetime import timedelta
 from multiprocessing import Pool
+from shutil import which
 from socket import AF_INET
 from typing import Tuple
 
@@ -34,14 +35,15 @@ def transform_rib(fixture: Tuple[str, str]) -> dict:
              'ignored_v4_pfxs': 0,
              'ignored_v6_pfxs': 0}
 
-    # -m one-line per entry with unix timestamps
-    # -v log errors to STDERR (instead of syslog)
-    p = sp.Popen(['bgpdump', '-m', '-v', input_file], stdout=sp.PIPE, text=True, bufsize=1)
+    # Output format:
+    #   type|timestamp|peer_ip|peer_asn|prefix|as_path|origin_asns|origin|
+    #   next_hop|local_pref|med|communities|atomic|aggr_asn|aggr_ip|only_to_customer
+    p = sp.Popen(['bgpkit-parser', input_file], stdout=sp.PIPE, text=True, bufsize=1)
 
     for line in p.stdout:
         res = line.split('|')
-        peer_ip = res[3]
-        prefix = res[5]
+        peer_ip = res[2]
+        prefix = res[4]
 
         if peer_ip not in stats['peers']:
             stats['peers'].add(peer_ip)
@@ -58,7 +60,7 @@ def transform_rib(fixture: Tuple[str, str]) -> dict:
 
         stats['entries'] += 1
 
-        as_path = res[6]
+        as_path = res[5]
         origin_asn = as_path.split(' ')[-1]
         if ',' in origin_asn:
             # Do not include "Origin AS Sets"
@@ -176,6 +178,10 @@ def main() -> None:
     )
 
     logging.info(f'Started {sys.argv}')
+
+    if not which('bgpkit-parser'):
+        logging.error('Failed to find bgpkit-parser executable. Is it installed?')
+        sys.exit(1)
 
     timestamp = parse_timestamp_argument(args.timestamp)
     if timestamp is None:

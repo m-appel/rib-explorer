@@ -4,3 +4,7 @@ docker-compose.yml
 Dockerfile
 LICENSE
 README.md
+data/
+indexes/
+merged/
+transformed/

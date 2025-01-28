@@ -13,7 +13,7 @@ Help()
     echo "it only includes the option for --min-collector-count so if you want to use different options, run"
     echo "the 'create' command by itself."
     echo
-    echo "Syntax for 'all': all timestamp num-fetchers num-transformers min-collector-count output-file"
+    echo "Syntax for 'all': all timestamp num-fetchers num-transformers min-collector-count"
     echo
     echo "Syntax: command timestamp [options]"
     echo
@@ -44,14 +44,14 @@ case $T in
         python3 create-merged-rtree.py "${@:2}"
     ;;
     all)
-        if [ $# -ne 6 ]; then
-            echo "usage: all timestamp num-fetchers num-transformers min-collector-count output-file"
+        if [ $# -ne 5 ]; then
+            echo "usage: all timestamp num-fetchers num-transformers min-collector-count"
             exit 1
         fi
         python3 build-index.py
         python3 fetch-snapshots.py -n "$3" "$2"
         python3 transform-snapshots.py -n "$4" "$2"
-        python3 create-merged-rtree.py --min-collector-count "$5" "$2" "$6"
+        python3 create-merged-rtree.py --min-collector-count "$5" "$2"
     ;;
     clean-data)
         rm -r data/*

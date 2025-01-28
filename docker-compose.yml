@@ -8,6 +8,7 @@ services:
       - ribexplorer-indexes:/code/indexes
       - ribexplorer-transformed:/code/transformed
       - ./merged:/code/merged
+      - ./stats:/code/stats
 
   ribexplorer-mount:
     build: .
@@ -18,3 +19,4 @@ services:
       - ./indexes:/code/indexes
       - ./transformed:/code/transformed
       - ./merged:/code/merged
+      - ./stats:/code/stats

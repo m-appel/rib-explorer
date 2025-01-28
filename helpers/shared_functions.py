@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from helpers.defines import DEFAULT_INDEX_FOLDER, FOLDER_FORMAT, INDEX_OUTPUT_FILE_FORMAT, TIMESTAMP_FORMAT
+from helpers.defines import DEFAULT_INDEX_FOLDER, FOLDER_FORMAT, INDEX_OUTPUT_FILE_FORMAT, STATS_OUTPUT_FILE_FORMAT, TIMESTAMP_FORMAT
 
 
 def parse_timestamp_argument(arg: str) -> datetime:
@@ -71,3 +71,8 @@ def get_latest_index_file(timestamp: datetime) -> str:
     if timestamp > latest:
         logging.warning(f'Latest index file is older than the requested timestamp. Index: {latest}')
     return os.path.join(DEFAULT_INDEX_FOLDER, file_name)
+
+
+def get_stat_file_name(timestamp: datetime, stats_dir: str, stat_type: str) -> str:
+    output_file_name = timestamp.strftime(STATS_OUTPUT_FILE_FORMAT).format(type=stat_type)
+    return os.path.join(stats_dir, output_file_name)

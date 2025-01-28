@@ -15,9 +15,10 @@ from typing import Tuple
 
 import radix
 
-from helpers.defines import (DEFAULT_DATA_FOLDER, DEFAULT_TRANSFORMED_FOLDER, FOLDER_FORMAT, RIB_FILE_FORMATS,
-                             TIMESTAMP_FORMAT_ESCAPED)
-from helpers.shared_functions import get_candidate_file, get_latest_index_file, parse_timestamp_argument
+from helpers.defines import (DEFAULT_DATA_FOLDER, DEFAULT_STATS_FOLDER, DEFAULT_TRANSFORMED_FOLDER, FOLDER_FORMAT,
+                             RIB_FILE_FORMATS, TIMESTAMP_FORMAT_ESCAPED)
+from helpers.shared_functions import (get_candidate_file, get_latest_index_file, get_stat_file_name,
+                                      parse_timestamp_argument)
 
 OUTPUT_FILE_SUFFIX = '.pickle.bz2'
 
@@ -124,15 +125,31 @@ def print_stats(stats: list) -> None:
         if v4_pfxs > 0:
             ignored_v4_pfxs_pct = ignored_v4_pfxs / v4_pfxs * 100
         final_v4_pfxs = v4_pfxs - ignored_v4_pfxs
+        stat['ignored_v4_pfxs_pct'] = ignored_v4_pfxs_pct
+        stat['final_v4_pfxs'] = final_v4_pfxs
         v6_pfxs = stat['v6_pfxs']
         ignored_v6_pfxs = stat['ignored_v6_pfxs']
         ignored_v6_pfxs_pct = 0
         if v6_pfxs > 0:
             ignored_v6_pfxs_pct = ignored_v6_pfxs / v6_pfxs * 100
         final_v6_pfxs = v6_pfxs - ignored_v6_pfxs
+        stat['ignored_v6_pfxs_pct'] = ignored_v6_pfxs_pct
+        stat['final_v6_pfxs'] = final_v6_pfxs
     # autopep8: off
         logging.info(f'{stat["file"]} | peers:{stat["peers"]} entries:{stat["entries"]} origin_sets:{stat["origin_sets"]} v4_pfxs:{v4_pfxs} v4_ignored:{ignored_v4_pfxs} ({ignored_v4_pfxs_pct:.2f}%) v4_final:{final_v4_pfxs} v6_pfxs:{v6_pfxs} v6_ignored:{ignored_v6_pfxs} ({ignored_v6_pfxs_pct:.2f}%) v6_final:{final_v6_pfxs}')
     # autopep8: on
+
+
+def write_stats(stats: list, output_file: str) -> None:
+    logging.info(f'Writing transform stats to {output_file}')
+    delimiter = ','
+    headers = ['file', 'peers', 'entries', 'origin_sets', 'v4_pfxs', 'ignored_v4_pfxs', 'ignored_v4_pfxs_pct',
+               'final_v4_pfxs', 'v6_pfxs', 'ignored_v6_pfxs', 'ignored_v6_pfxs_pct', 'final_v6_pfxs']
+    with open(output_file, 'w') as f:
+        f.write(delimiter.join(headers) + '\n')
+        for stat in sorted(stats, key=lambda d: d['file']):
+            line_data = [stat[h] for h in headers]
+            f.write(delimiter.join(map(str, line_data)) + '\n')
 
 
 def main() -> None:
@@ -165,6 +182,10 @@ def main() -> None:
     parser.add_argument('-f', '--force',
                         action='store_true',
                         help='overwrite existing files')
+    parser.add_argument('-w', '--write-stats', action='store_true', help='write stats to file')
+    parser.add_argument('-s', '--stats-dir',
+                        default=DEFAULT_STATS_FOLDER,
+                        help=f'stats output directory (default: {DEFAULT_STATS_FOLDER})')
     args = parser.parse_args()
 
     FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -228,6 +249,10 @@ def main() -> None:
     with Pool(num_workers) as p:
         stats = p.map(transform_rib, fixtures)
     print_stats(stats)
+
+    if args.write_stats:
+        stats_output_file = get_stat_file_name(timestamp, args.stats_dir, 'transformed')
+        write_stats(stats, stats_output_file)
 
 
 if __name__ == '__main__':

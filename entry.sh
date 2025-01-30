@@ -50,8 +50,8 @@ case $T in
         fi
         python3 build-index.py
         python3 fetch-snapshots.py -n "$3" "$2"
-        python3 transform-snapshots.py -n "$4" "$2"
-        python3 create-merged-rtree.py --min-collector-count "$5" "$2"
+        python3 transform-snapshots.py -w -n "$4" "$2"
+        python3 create-merged-rtree.py -w --min-collector-count "$5" "$2"
     ;;
     clean-data)
         rm -r data/*

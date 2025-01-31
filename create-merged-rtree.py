@@ -183,8 +183,8 @@ def main() -> None:
             f.write(f'average collectors per prefix,{avg_collector_count},,\n')
             f.write(f'total prefixes,{total_prefixes},100%,\n')
             f.write(f'ignored prefixes,{total_ignored_prefixes},{total_ignored_prefixes_pct}%, 100%\n')
-            f.write(f'announced by multiple ases,{contested_prefixes},{contested_prefixes_total_pct}%, {contested_prefixes_pct}%\n')
-            f.write(f'below threshold,{below_threshold_prefixes},{below_threshold_prefixes_total_pct}%, {below_threshold_prefixes_pct}%\n')
+            f.write(f'announced by multiple ases,{contested_prefixes},{contested_prefixes_total_pct}%,{contested_prefixes_pct}%\n')
+            f.write(f'below threshold,{below_threshold_prefixes},{below_threshold_prefixes_total_pct}%,{below_threshold_prefixes_pct}%\n')
             f.write(f'used prefixes,{used_prefixes},{used_prefixes_pct}%,\n')
             # autopep8: on
 

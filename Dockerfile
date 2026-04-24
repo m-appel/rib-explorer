@@ -3,7 +3,7 @@ COPY requirements.txt .
 RUN <<EOF
 apk add --no-cache cargo=~1.91 python3-dev=~3.12 py3-pip=~25
 pip -q install --break-system-packages -r requirements.txt
-cargo install bgpkit-parser@0.15.0 --features cli
+cargo install bgpkit-parser@0.16.0 --features cli
 EOF
 
 FROM alpine:3.23
